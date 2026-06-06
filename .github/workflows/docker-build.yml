@@ -1,0 +1,182 @@
+# ============================================
+# docker-build.yml
+# GitHub Actions — Build Docker image + tests
+# ============================================
+# Este workflow:
+# 1. Ejecuta los tests de PHPUnit
+# 2. Construye la imagen Docker
+# 3. Pushea la imagen a GitHub Container Registry (GHCR)
+# 4. Escanea vulnerabilidades
+# ============================================
+
+name: Docker Build & Test
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - '*.md'
+      - '.dockerignore'
+      - '.gitignore'
+      - 'script_tools/**'
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+  PHP_VERSION: '8.3'
+
+jobs:
+  # ==========================================
+  # Job 1: Tests unitarios PHP
+  # ==========================================
+  test:
+    name: PHPUnit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+          extensions: pdo, pdo_mysql, mysqli, gd, zip, mbstring, curl
+          tools: composer:v2
+
+      - name: Validate composer.json
+        working-directory: plantillas_web_skill
+        run: composer validate --strict
+
+      - name: Install dependencies
+        working-directory: plantillas_web_skill
+        run: composer install --no-progress --prefer-dist
+
+      - name: Run PHPUnit tests
+        working-directory: plantillas_web_skill
+        run: ./vendor/bin/phpunit --no-coverage
+
+  # ==========================================
+  # Job 2: Build y push de imagen Docker (main)
+  # ==========================================
+  docker:
+    name: Docker Build & Push
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=sha,format=short
+            type=ref,event=branch
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: plantillas_web_skill
+          file: plantillas_web_skill/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          format: 'table'
+          exit-code: '1'
+          ignore-unfixed: true
+          severity: 'CRITICAL,HIGH'
+        continue-on-error: true
+
+  # ==========================================
+  # Job 3: Build + smoke test (PRs)
+  # ==========================================
+  docker-pr:
+    name: Docker Build & Smoke Test
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: plantillas_web_skill
+          file: plantillas_web_skill/Dockerfile
+          push: false
+          load: true
+          tags: misitios-web:pr-check
+          cache-from: type=gha
+
+      - name: Smoke test — start container and check health
+        run: |
+          set -euo pipefail
+          cleanup() {
+            docker stop misitios-web-test 2>/dev/null || true
+            docker rm misitios-web-test 2>/dev/null || true
+          }
+          trap cleanup EXIT
+
+          docker run -d --name misitios-web-test -p 8080:80 misitios-web:pr-check
+
+          echo "Esperando que Apache arranque..."
+          for i in $(seq 1 15); do
+            if curl -sf http://localhost:8080/ > /dev/null 2>&1; then
+              echo "Apache respondiendo OK."
+              break
+            fi
+            sleep 2
+          done
+
+          HTTP_CODE=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/)
+          echo "HTTP Status: $HTTP_CODE"
+          test "$HTTP_CODE" = "200"
+
+          echo "Verificando archivos clave..."
+          docker exec misitios-web-test test -f /var/www/html/config.php
+          echo "  config.php OK"
+          docker exec misitios-web-test test -f /var/www/html/chatbot-api.php
+          echo "  chatbot-api.php OK"
+          docker exec misitios-web-test test -f /var/www/html/panel-admin/index.php
+          echo "  panel-admin OK"
+
+          echo "Verificando extensiones PHP..."
+          docker exec misitios-web-test php -m | grep pdo_mysql
+          echo "  pdo_mysql OK"
+          docker exec misitios-web-test php -m | grep gd
+          echo "  gd OK"
+
+          echo "Smoke test PASSED ✅"
