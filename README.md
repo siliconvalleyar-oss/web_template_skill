@@ -1,8 +1,6 @@
 # 🌐 Sistema Multi-Emprendimiento con DeepSeek 7B
 
 [![Docker Build & Test](https://github.com/siliconvalleyar-oss/web_template_skill/actions/workflows/docker-build.yml/badge.svg)](https://github.com/siliconvalleyar-oss/web_template_skill/actions/workflows/docker-build.yml)
-[![PHPUnit Tests](https://img.shields.io/badge/tests-24%20passing-brightgreen)](API.md)
-[![Docker](https://img.shields.io/badge/deploy-Docker-2496ED?logo=docker)](DEPLOY.md)
 
 Generador y administrador de **30 sitios web** para diferentes emprendimientos con tienda online, chatbot offline con inteligencia artificial (DeepSeek 7B via Ollama), y panel de administración centralizado.
 
