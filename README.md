@@ -13,6 +13,7 @@ Generador y administrador de sitios web para múltiples emprendimientos con **ti
 | [🚀 DEPLOY.md](DEPLOY.md) | Despliegue con Docker, XAMPP, CI/CD y solución de problemas |
 | [📡 API.md](API.md) | Referencia de endpoints: chatbot IA y subida de archivos |
 | [🧪 Tests](script_tools/test.sh) | Tests unitarios con PHPUnit (ejecutar: `./script_tools/test.sh`) |
+| [⚙️ Skill](.opencode/skills/plantillas-web-skill.md) | Archivo de skill para Codebuff |
 
 ---
 

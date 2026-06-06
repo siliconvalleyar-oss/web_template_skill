@@ -1,5 +1,7 @@
 # Guía de Despliegue — Sistema Multi-Emprendimiento
 
+> ⬅️ [Volver al README](README.md) — Documentación general e inicio rápido
+
 ## Índice
 
 1. [Despliegue con Docker](#1-despliegue-con-docker)

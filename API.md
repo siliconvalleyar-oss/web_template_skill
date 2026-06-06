@@ -1,5 +1,7 @@
 # API Reference — Sistema Multi-Emprendimiento
 
+> ⬅️ [Volver al README](README.md) — Documentación general e inicio rápido
+
 ## Índice
 
 1. [Chatbot IA](#1-chatbot-ia-api)
