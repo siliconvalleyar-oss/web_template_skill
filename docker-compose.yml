@@ -1,0 +1,152 @@
+# ============================================
+# docker-compose.yml
+# Sistema Multi-Emprendimiento con DeepSeek 7B
+# ============================================
+# Uso:
+#   docker compose up -d              # Iniciar servicios
+#   docker compose up -d --build web  # Reconstruir web
+#   docker compose logs -f            # Ver logs
+#   docker compose down               # Detener todo
+#   docker compose --profile dev up   # Con phpMyAdmin
+# ============================================
+
+services:
+  # ==========================================
+  # Servicio web (Apache + PHP 8)
+  # ==========================================
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: misitios-web
+    ports:
+      - "80:80"
+    environment:
+      DB_HOST: db
+      DB_NAME: sistema_emprendimientos
+      DB_USER: root
+      DB_PASS: rootpassword
+      OLLAMA_URL: http://ollama:11434/api/chat
+      OLLAMA_MODEL: deepseek-r1:1.5b
+      BASE_PATH: /var/www/html
+    volumes:
+      # Montar htdocs para hot-reload en desarrollo
+      - ./htdocs:/var/www/html
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  # ==========================================
+  # Servicio MySQL 8.0
+  # ==========================================
+  db:
+    image: mysql:8.0
+    container_name: misitios-db
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: sistema_emprendimientos
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      # Inicialización automática de la BD en primer inicio
+      - ./htdocs/sistema_emprendimientos.sql:/docker-entrypoint-initdb.d/01-schema.sql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-prootpassword"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  # ==========================================
+  # Servicio Ollama (DeepSeek / IA Chatbot)
+  # ==========================================
+  ollama:
+    image: ollama/ollama:latest
+    container_name: misitios-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    # Ollama como proceso principal + healthcheck para descargar modelo
+    command: ["serve"]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  # ==========================================
+  # Inicializador de modelo DeepSeek (se ejecuta una vez)
+  # Descarga el modelo si no existe
+  # ==========================================
+  model-init:
+    image: ollama/ollama:latest
+    container_name: misitios-model-init
+    volumes:
+      - ollama_data:/root/.ollama
+    depends_on:
+      ollama:
+        condition: service_healthy
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        echo "Verificando modelo DeepSeek..."
+        if ! ollama list 2>/dev/null | grep -q deepseek-r1:1.5b; then
+          echo "Descargando deepseek-r1:1.5b (~1GB)..."
+          ollama pull deepseek-r1:1.5b
+          echo "Modelo descargado."
+        else
+          echo "Modelo ya existe."
+        fi
+    profiles:
+      - init
+    networks:
+      - app-network
+
+  # ==========================================
+  # phpMyAdmin (opcional, solo con --profile dev)
+  # ==========================================
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: misitios-phpmyadmin
+    environment:
+      PMA_HOST: db
+      PMA_USER: root
+      PMA_PASSWORD: rootpassword
+      UPLOAD_LIMIT: 100M
+    ports:
+      - "8080:80"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    profiles:
+      - dev
+    networks:
+      - app-network
+
+# ============================================
+# Volúmenes persistentes
+# ============================================
+volumes:
+  mysql_data:
+  ollama_data:
+
+# ============================================
+# Red interna
+# ============================================
+networks:
+  app-network:
+    driver: bridge

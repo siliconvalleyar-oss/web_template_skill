@@ -5,24 +5,26 @@
  */
 
 // Configuración de la base de datos
-define('DB_HOST', 'localhost');
-define('DB_NAME', 'sistema_emprendimientos');
-define('DB_USER', 'root');
-define('DB_PASS', ''); // Cambiar según configuración de XAMPP
+// Se pueden sobreescribir via variables de entorno (útil para Docker)
+define('DB_HOST', getenv('DB_HOST') ?: 'localhost');
+define('DB_NAME', getenv('DB_NAME') ?: 'sistema_emprendimientos');
+define('DB_USER', getenv('DB_USER') ?: 'root');
+define('DB_PASS', getenv('DB_PASS') ?: '');
 
 // Configuración de rutas
-define('BASE_PATH', dirname(__DIR__) . '/htdocs');
+// En Docker, la raiz web es /var/www/html, y los archivos están en htdocs/
+define('BASE_PATH', getenv('BASE_PATH') ?: dirname(__DIR__) . '/htdocs');
 define('PANEL_PATH', BASE_PATH . '/panel-admin');
 define('TEMPLATE_PATH', BASE_PATH . '/plantilla-base');
 define('BACKUP_PATH', BASE_PATH . '/backups');
 
 // Configuración de Ollama (DeepSeek 7B)
-define('OLLAMA_URL', 'http://localhost:11434/api/chat');
-define('OLLAMA_MODEL', 'deepseek-r1:1.5b');
-define('CHATBOT_TIMEOUT', 600); // 10 minutos para CPU lento (Intel i3)
+define('OLLAMA_URL', getenv('OLLAMA_URL') ?: 'http://localhost:11434/api/chat');
+define('OLLAMA_MODEL', getenv('OLLAMA_MODEL') ?: 'deepseek-r1:1.5b');
+define('CHATBOT_TIMEOUT', (int)(getenv('CHATBOT_TIMEOUT') ?: 600)); // 10 minutos
 
 // Configuración de subida de archivos
-define('MAX_FILE_SIZE', 5 * 1024 * 1024); // 5MB
+define('MAX_FILE_SIZE', (int)(getenv('MAX_FILE_SIZE') ?: 5 * 1024 * 1024)); // 5MB
 define('ALLOWED_EXTENSIONS', ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'ico']);
 
 // Configuración de sesión

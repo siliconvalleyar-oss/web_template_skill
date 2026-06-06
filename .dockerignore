@@ -1,0 +1,53 @@
+# ============================================
+# .dockerignore
+# Archivos y directorios que NO deben ir al
+# contexto de build de Docker
+# ============================================
+
+# === Git ===
+.git/
+.gitignore
+.gitattributes
+
+# === Entorno local ===
+.env
+.env.local
+.env.*.local
+
+# === IDE / Editor ===
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# === Sistema operativo ===
+.DS_Store
+Thumbs.db
+
+# === PHP / Composer ===
+vendor/
+composer.lock
+composer.json
+
+# === Tests ===
+tests/
+phpunit.xml.dist
+.phpunit.cache/
+coverage/
+
+# === Documentación ===
+README.md
+API.md
+
+# === Scripts ===
+script_tools/
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# === Logs ===
+*.log
+
+# === Runtime ===
+backups/
