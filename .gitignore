@@ -1,0 +1,57 @@
+# ============================================
+# Sistema Multi-Emprendimiento - .gitignore
+# ============================================
+
+# === Archivos del sistema operativo ===
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+
+# === Directorios de uploads (contenido generado por usuarios) ===
+htdocs/*/uploads/
+htdocs/plantilla-base/uploads/
+
+# === Backups generados por el sistema ===
+htdocs/backups/
+
+# === Archivos de entorno y configuración local ===
+.env
+.env.local
+.env.*.local
+
+# === IDE / Editor ===
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+*.sublime-project
+*.sublime-workspace
+.project
+.classpath
+
+# === Logs ===
+*.log
+error_log
+nginx_error.log
+php_error.log
+
+# === Dependencias (si se agregaran en el futuro) ===
+node_modules/
+vendor/
+bower_components/
+
+# === Archivos de cache temporal ===
+.cache/
+tmp/
+temp/
+
+# === Archivos de base de datos SQL ===
+*.sqlite
+*.sqlite3
+*.db
