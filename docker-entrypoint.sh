@@ -12,6 +12,15 @@ echo "============================================"
 # === 1. Esperar a que MySQL esté disponible ===
 if [ -n "${DB_HOST:-}" ]; then
     echo "[1/3] Esperando a MySQL en $DB_HOST:3306..."
+    # Primero verificar que el hostname se resuelve via DNS de Docker
+    for i in $(seq 1 5); do
+        if getent hosts "$DB_HOST" > /dev/null 2>&1; then
+            echo "  DNS resuelve $DB_HOST correctamente."
+            break
+        fi
+        sleep 2
+    done
+
     for i in $(seq 1 30); do
         if php -r "
             \$conn = @fsockopen('$DB_HOST', 3306, \$errno, \$errstr, 2);

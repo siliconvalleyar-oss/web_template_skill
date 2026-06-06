@@ -49,6 +49,21 @@ RUN set -eux; \
     apache2ctl -M 2>/dev/null | grep -E 'rewrite|headers|expires|deflate'
 
 # ============================================
+# Configurar Apache: AllowOverride para .htaccess
+# ============================================
+RUN set -eux; \
+    { \
+        echo '<Directory /var/www/html>'; \
+        echo '    Options Indexes FollowSymLinks'; \
+        echo '    AllowOverride All'; \
+        echo '    Require all granted'; \
+        echo '</Directory>'; \
+    } > /etc/apache2/conf-available/app-htaccess.conf; \
+    a2enconf app-htaccess; \
+    # Verificar configuración
+    apache2ctl -t 2>&1 | grep -q 'Syntax OK' && echo 'Apache config OK'
+
+# ============================================
 # Copiar el código de la aplicación
 # ============================================
 COPY htdocs/ /var/www/html/
@@ -74,5 +89,7 @@ CMD ["apache2-foreground"]
 # ============================================
 # Healthcheck
 # ============================================
-HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-    CMD curl -f http://localhost/ || exit 1
+# Healthcheck: prueba panel-admin que siempre retorna 200
+# Usa -fL para seguir redirecciones y fallar solo en errores HTTP >= 400
+HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
+    CMD curl -fL http://localhost/panel-admin/index.php || exit 1
