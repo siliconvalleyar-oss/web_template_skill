@@ -19,6 +19,7 @@ RUN set -eux; \
         libfreetype6-dev \
         libzip-dev \
         libcurl4-openssl-dev \
+        libonig-dev \
         git \
         unzip \
         curl \
