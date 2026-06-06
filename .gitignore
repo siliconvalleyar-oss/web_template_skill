@@ -46,10 +46,10 @@ node_modules/
 vendor/
 bower_components/
 
-# === Archivos de cache temporal ===
-.cache/
-tmp/
-temp/
+# === Dependencias (Composer / PHPUnit) ===
+vendor/
+.phpunit.cache/
+coverage/
 
 # === Archivos de base de datos SQL ===
 *.sqlite
